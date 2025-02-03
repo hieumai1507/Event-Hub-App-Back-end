@@ -9,8 +9,9 @@ const getJSONWebToken = async (email, id) => {
   };
 
   const token = jwt.sign(payload, process.env.SECRET_KEY, {
-    expiresIn: "24h",
+    expiresIn: "7d",
   });
+
   return token;
 };
 const register = asyncHandler(async (req, res) => {
@@ -37,4 +38,27 @@ const register = asyncHandler(async (req, res) => {
   });
   console.log(hashedPassword);
 });
+
+const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const existingUser = await UserModel.findOne({ email });
+  if (!existingUser) {
+    res.status(403);
+    throw new Error("Email or password is not correct");
+  }
+  const isMatchPassword = await bcrypt.compare(password, existingUser.password);
+  if (!isMatchPassword) {
+    res.status(401);
+    throw new Error("Email or password is not correct");
+  }
+  res.status(200).json({
+    message: "Login successfully!!",
+    data: {
+      id: existingUser.id,
+      email: existingUser.email,
+      accessToken: await getJSONWebToken(email, existingUser?.id),
+    },
+  });
+});
 module.exports = register;
+module.exports = login;
